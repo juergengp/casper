@@ -33,6 +33,9 @@ std::string OllamaClient::httpPost(const std::string& endpoint, const std::strin
     std::string response;
     std::string url = host_ + endpoint;
 
+    // Reset curl handle to clear any previous state
+    curl_easy_reset(curl_);
+
     curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl_, CURLOPT_POST, 1L);
     curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, payload.c_str());
@@ -58,6 +61,9 @@ std::string OllamaClient::httpPost(const std::string& endpoint, const std::strin
 std::string OllamaClient::httpGet(const std::string& endpoint) {
     std::string response;
     std::string url = host_ + endpoint;
+
+    // Reset curl handle to clear any previous POST state
+    curl_easy_reset(curl_);
 
     curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl_, CURLOPT_HTTPGET, 1L);

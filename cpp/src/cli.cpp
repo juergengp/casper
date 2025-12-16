@@ -1,10 +1,12 @@
 #include "cli.h"
 #include "utils.h"
+#include "command_menu.h"
 #include <iostream>
 #include <sstream>
 #include <cstring>
 #include <chrono>
 #include <unistd.h>
+#include <termios.h>
 
 #ifdef HAVE_READLINE
 #include <readline/readline.h>
@@ -24,6 +26,7 @@ CLI::CLI()
     client_ = std::make_unique<OllamaClient>(config_->getOllamaHost());
     parser_ = std::make_unique<ToolParser>();
     executor_ = std::make_unique<ToolExecutor>(*config_);
+    command_menu_ = std::make_unique<CommandMenu>();
 
     // Set confirmation callback
     executor_->setConfirmCallback([this](const std::string& tool_name, const std::string& description) {
@@ -41,7 +44,7 @@ bool CLI::parseArgs(int argc, char* argv[]) {
             printHelp();
             return false;
         } else if (arg == "-v" || arg == "--version") {
-            std::cout << "ollamaCode version 2.0.0 (C++)" << std::endl;
+            std::cout << "ollamaCode version 2.0.1 (C++)" << std::endl;
             return false;
         } else if (arg == "-m" || arg == "--model") {
             if (i + 1 < argc) {
@@ -81,7 +84,7 @@ void CLI::printBanner() {
 
 )" << utils::terminal::RESET;
 
-    std::cout << utils::terminal::BLUE << "Interactive CLI for Ollama - Version 2.0.0 (C++)" << utils::terminal::RESET << "\n";
+    std::cout << utils::terminal::BLUE << "Interactive CLI for Ollama - Version 2.0.1 (C++)" << utils::terminal::RESET << "\n";
     std::cout << utils::terminal::YELLOW << "Type '/help' for commands, '/exit' to quit" << utils::terminal::RESET << "\n\n";
 }
 
@@ -205,7 +208,9 @@ void CLI::selectModel() {
 }
 
 std::string CLI::getSystemPrompt() {
-    return R"(You are an AI coding assistant with tool access. When asked to perform actions, use the appropriate tools.
+    return R"(You are an AI coding assistant with tool access. You MUST use tools to complete tasks - do NOT just describe what you would do.
+
+CRITICAL: When the user asks you to do something that requires a tool, you MUST output the XML tool call IMMEDIATELY. Do NOT explain what you're going to do. Do NOT say "I propose to..." or "Here's what I'll do...". Just output the tool call XML directly.
 
 ## Available Tools
 
@@ -236,7 +241,7 @@ std::string CLI::getSystemPrompt() {
 
 ## Tool Usage Format
 
-Use this XML format to call tools:
+Use this EXACT XML format to call tools:
 
 <function_calls>
 <invoke name="TOOL_NAME">
@@ -247,29 +252,36 @@ Use this XML format to call tools:
 
 ## Examples
 
-Read a file:
-<function_calls>
-<invoke name="Read">
-<parameter name="file_path">/path/to/file.txt</parameter>
-</invoke>
-</function_calls>
-
-Run a command:
+User: "List my files"
+Response:
 <function_calls>
 <invoke name="Bash">
 <parameter name="command">ls -la</parameter>
-<parameter name="description">List all files</parameter>
+<parameter name="description">List all files in current directory</parameter>
 </invoke>
 </function_calls>
 
-Search for files:
+User: "Read main.cpp"
+Response:
+<function_calls>
+<invoke name="Read">
+<parameter name="file_path">main.cpp</parameter>
+</invoke>
+</function_calls>
+
+User: "Find all Python files"
+Response:
 <function_calls>
 <invoke name="Glob">
-<parameter name="pattern">*.cpp</parameter>
+<parameter name="pattern">**/*.py</parameter>
 </invoke>
 </function_calls>
 
-When the user asks you to do something, think about what tools you need, explain your plan briefly, then execute the tools. After tools run, you'll receive the results and can provide your final answer.
+IMPORTANT RULES:
+1. When a task requires tools, output the <function_calls> XML IMMEDIATELY without any preamble
+2. You can add a brief explanation AFTER the tool call XML, not before
+3. Never describe what tool you would use - just use it
+4. After receiving tool results, provide a helpful summary to the user
 )";
 }
 
@@ -514,9 +526,15 @@ void CLI::processResponseWithMessages(json& messages, const std::string& respons
 }
 
 void CLI::singlePromptMode(const std::string& prompt) {
+    // Don't submit empty prompts to Ollama
+    std::string trimmedPrompt = utils::trim(prompt);
+    if (trimmedPrompt.empty()) {
+        return;
+    }
+
     auto start = std::chrono::steady_clock::now();
 
-    json messages = buildMessages(prompt);
+    json messages = buildMessages(trimmedPrompt);
 
     std::string model = model_override_.empty() ? config_->getModel() : model_override_;
     double temp = temperature_override_ < 0 ? config_->getTemperature() : temperature_override_;
@@ -591,20 +609,77 @@ void CLI::interactiveMode() {
 
     while (true) {
         std::cout << utils::terminal::BOLD << utils::terminal::CYAN << "You> " << utils::terminal::RESET;
+        std::cout.flush();
 
         std::string input;
 
-#ifdef HAVE_READLINE
-        char* line = readline("");
-        if (!line) break;
-        input = line;
-        if (!input.empty()) {
-            add_history(line);
+        // Check first character to see if user wants command menu
+        // We need to read the first character without echo to detect "/"
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        newt.c_cc[VMIN] = 1;
+        newt.c_cc[VTIME] = 0;
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+        char first_char;
+        if (read(STDIN_FILENO, &first_char, 1) != 1) {
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+            break;
         }
-        free(line);
-#else
-        if (!std::getline(std::cin, input)) break;
+
+        // Restore terminal for remaining input
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+        if (first_char == '/') {
+            // Show command menu
+            // First, erase the prompt line to redraw with menu
+            std::cout << "\r\033[K";  // Clear line
+            std::cout.flush();
+
+            auto result = command_menu_->show("/");
+
+            if (result.cancelled) {
+                // User cancelled, show prompt again
+                std::cout << "\r\033[K";
+                continue;
+            }
+
+            input = result.command;
+
+            // Add to readline history if available
+#ifdef HAVE_READLINE
+            if (!input.empty()) {
+                add_history(input.c_str());
+            }
 #endif
+        } else if (first_char == '\n') {
+            // Empty line
+            continue;
+        } else if (first_char == 4) {  // Ctrl+D
+            std::cout << "\n";
+            break;
+        } else {
+            // Regular input - echo first char and continue with readline or getline
+            std::cout << first_char;
+            std::cout.flush();
+
+#ifdef HAVE_READLINE
+            // Use readline for the rest
+            char* line = readline("");
+            if (!line) break;
+            input = first_char + std::string(line);
+            if (!input.empty()) {
+                add_history(input.c_str());
+            }
+            free(line);
+#else
+            std::string rest;
+            if (!std::getline(std::cin, rest)) break;
+            input = first_char + rest;
+#endif
+        }
 
         input = utils::trim(input);
         if (input.empty()) continue;

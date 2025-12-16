@@ -9,6 +9,7 @@
 #include "tool_parser.h"
 #include "tool_executor.h"
 #include "session_manager.h"
+#include "command_menu.h"
 
 namespace ollamacode {
 
@@ -60,6 +61,7 @@ private:
     std::unique_ptr<ToolParser> parser_;
     std::unique_ptr<ToolExecutor> executor_;
     std::unique_ptr<SessionManager> session_manager_;
+    std::unique_ptr<CommandMenu> command_menu_;
 
     // Options from command line
     std::string direct_prompt_;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(ollamacode VERSION 2.0.0 LANGUAGES CXX)
+project(ollamacode VERSION 2.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,6 +16,11 @@ find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 
 # Optional: readline for better CLI
+# On macOS, Homebrew installs readline as keg-only, so we need to set the path
+if(APPLE)
+    set(ENV{PKG_CONFIG_PATH} "/opt/homebrew/opt/readline/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+endif()
+
 find_package(PkgConfig)
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(READLINE readline)
@@ -38,6 +43,7 @@ set(SOURCES
     src/cli.cpp
     src/utils.cpp
     src/session_manager.cpp
+    src/command_menu.cpp
 )
 
 # Header files
@@ -49,6 +55,7 @@ set(HEADERS
     include/cli.h
     include/utils.h
     include/session_manager.h
+    include/command_menu.h
     include/json.hpp
 )
 
@@ -65,7 +72,12 @@ target_link_libraries(ollamacode
 # Link readline if available
 if(READLINE_FOUND)
     target_include_directories(ollamacode PRIVATE ${READLINE_INCLUDE_DIRS})
-    target_link_libraries(ollamacode ${READLINE_LIBRARIES})
+    # On macOS, use the full path to Homebrew's readline to avoid linking against system libedit
+    if(APPLE AND EXISTS "/opt/homebrew/opt/readline/lib/libreadline.dylib")
+        target_link_libraries(ollamacode "/opt/homebrew/opt/readline/lib/libreadline.dylib")
+    else()
+        target_link_libraries(ollamacode ${READLINE_LIBRARIES})
+    endif()
     target_compile_definitions(ollamacode PRIVATE HAVE_READLINE)
 endif()
 
