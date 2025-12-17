@@ -27,11 +27,15 @@ CLI::CLI()
     parser_ = std::make_unique<ToolParser>();
     executor_ = std::make_unique<ToolExecutor>(*config_);
     command_menu_ = std::make_unique<CommandMenu>();
+    mcp_client_ = std::make_unique<MCPClient>();
 
     // Set confirmation callback
     executor_->setConfirmCallback([this](const std::string& tool_name, const std::string& description) {
         return confirmToolExecution(tool_name, description);
     });
+
+    // Connect MCP client to executor
+    executor_->setMCPClient(mcp_client_.get());
 }
 
 CLI::~CLI() = default;
@@ -44,7 +48,7 @@ bool CLI::parseArgs(int argc, char* argv[]) {
             printHelp();
             return false;
         } else if (arg == "-v" || arg == "--version") {
-            std::cout << "ollamaCode version 2.0.1 (C++)" << std::endl;
+            std::cout << "ollamaCode version 2.0.2 (C++)" << std::endl;
             return false;
         } else if (arg == "-m" || arg == "--model") {
             if (i + 1 < argc) {
@@ -60,6 +64,8 @@ bool CLI::parseArgs(int argc, char* argv[]) {
         } else if (arg == "--unsafe") {
             unsafe_mode_override_ = true;
             config_->setSafeMode(false);
+        } else if (arg == "--mcp") {
+            config_->setMCPEnabled(true);
         } else {
             // Collect remaining args as prompt
             for (int j = i; j < argc; j++) {
@@ -84,7 +90,7 @@ void CLI::printBanner() {
 
 )" << utils::terminal::RESET;
 
-    std::cout << utils::terminal::BLUE << "Interactive CLI for Ollama - Version 2.0.1 (C++)" << utils::terminal::RESET << "\n";
+    std::cout << utils::terminal::BLUE << "Interactive CLI for Ollama - Version 2.0.2 (C++)" << utils::terminal::RESET << "\n";
     std::cout << utils::terminal::YELLOW << "Type '/help' for commands, '/exit' to quit" << utils::terminal::RESET << "\n\n";
 }
 
@@ -98,6 +104,7 @@ OPTIONS:
     -t, --temperature NUM   Set temperature (0.0-2.0)
     -a, --auto-approve      Auto-approve all tool executions
     --unsafe                Disable safe mode (allow all commands)
+    --mcp                   Enable MCP servers on startup
     -v, --version           Show version
     -h, --help              Show this help
 
@@ -109,6 +116,11 @@ INTERACTIVE COMMANDS (use /command):
     /temp NUM               Set temperature
     /safe [on|off]          Toggle safe mode
     /auto [on|off]          Toggle auto-approve
+    /mcp                    Show MCP status and tools
+    /mcp on                 Enable MCP and connect servers
+    /mcp off                Disable MCP and disconnect servers
+    /mcp servers            List configured MCP servers
+    /mcp tools              List available MCP tools
     /clear                  Clear screen
     /config                 Show configuration
     /exit, /quit            Exit ollamacode
@@ -118,6 +130,11 @@ EXAMPLES:
     ollamacode "List all Python files"      # Single prompt with tools
     ollamacode -m llama3 "Hello"            # Use specific model
     ollamacode -a "Build the project"       # Auto-approve all tools
+    ollamacode --mcp "Search the web"       # Use MCP tools
+
+MCP SERVERS:
+    Configure MCP servers in ~/.config/ollamacode/mcp_servers.json
+    See docs/MCP_SETUP.md for configuration examples
 
 )";
 }
@@ -130,12 +147,169 @@ void CLI::printConfig() {
     std::cout << "  Max Tokens:   " << config_->getMaxTokens() << "\n";
     std::cout << "  Safe Mode:    " << (config_->getSafeMode() ? "true" : "false") << "\n";
     std::cout << "  Auto Approve: " << (config_->getAutoApprove() ? "true" : "false") << "\n";
+    std::cout << "  MCP Enabled:  " << (config_->getMCPEnabled() ? std::string(utils::terminal::GREEN) + "true" : "false") << utils::terminal::RESET << "\n";
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd))) {
         std::cout << "  Working Dir:  " << cwd << "\n";
     }
     std::cout << "\n";
+}
+
+// MCP Methods
+void CLI::initializeMCP() {
+    if (!config_->getMCPEnabled()) {
+        return;
+    }
+
+    // Set status callback
+    mcp_client_->setStatusCallback([](const std::string& server, const std::string& status) {
+        std::cout << utils::terminal::CYAN << "  [MCP] " << server << ": " << status << utils::terminal::RESET << "\n";
+    });
+
+    // Load server configurations from config
+    auto servers = config_->getMCPServers();
+    for (const auto& server : servers) {
+        ollamacode::MCPServerConfig mcp_config;
+        mcp_config.name = server.name;
+        mcp_config.command = server.command;
+        mcp_config.args = server.args;
+        mcp_config.env = server.env;
+        mcp_config.enabled = server.enabled;
+        mcp_config.transport = server.transport;
+        mcp_config.url = server.url;
+        mcp_client_->addServer(mcp_config);
+    }
+
+    // Connect to enabled servers
+    std::cout << utils::terminal::CYAN << utils::terminal::BOLD << "Connecting to MCP servers..." << utils::terminal::RESET << "\n";
+    mcp_client_->connectAll();
+    std::cout << "\n";
+}
+
+void CLI::printMCPStatus() {
+    std::cout << utils::terminal::CYAN << utils::terminal::BOLD << "MCP Status:" << utils::terminal::RESET << "\n";
+    std::cout << "  Enabled: " << (config_->getMCPEnabled() ? std::string(utils::terminal::GREEN) + "yes" : "no") << utils::terminal::RESET << "\n";
+
+    auto servers = config_->getMCPServers();
+    if (servers.empty()) {
+        std::cout << "  Servers: " << utils::terminal::YELLOW << "none configured" << utils::terminal::RESET << "\n";
+        std::cout << "\n  Configure servers in: " << Config::getMCPConfigPath() << "\n";
+    } else {
+        std::cout << "  Servers:\n";
+        for (const auto& server : servers) {
+            bool connected = mcp_client_->isServerConnected(server.name);
+            std::string status = connected ? std::string(utils::terminal::GREEN) + "connected" : std::string(utils::terminal::YELLOW) + "disconnected";
+            std::string enabled = server.enabled ? "" : " (disabled)";
+            std::cout << "    - " << server.name << ": " << status << utils::terminal::RESET << enabled << "\n";
+        }
+    }
+
+    auto tools = mcp_client_->getAllTools();
+    std::cout << "  Available Tools: " << tools.size() << "\n";
+    std::cout << "\n";
+}
+
+void CLI::printMCPTools() {
+    auto tools = mcp_client_->getAllTools();
+
+    if (tools.empty()) {
+        std::cout << utils::terminal::YELLOW << "No MCP tools available." << utils::terminal::RESET << "\n";
+        std::cout << "Make sure MCP is enabled (/mcp on) and servers are configured.\n\n";
+        return;
+    }
+
+    std::cout << utils::terminal::CYAN << utils::terminal::BOLD << "Available MCP Tools:" << utils::terminal::RESET << "\n\n";
+
+    std::string currentServer;
+    for (const auto& tool : tools) {
+        if (tool.serverName != currentServer) {
+            currentServer = tool.serverName;
+            std::cout << utils::terminal::MAGENTA << "  [" << currentServer << "]" << utils::terminal::RESET << "\n";
+        }
+        std::cout << "    " << utils::terminal::GREEN << tool.name << utils::terminal::RESET;
+        if (!tool.description.empty()) {
+            std::cout << " - " << tool.description;
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}
+
+void CLI::handleMCPCommand(const std::string& cmd) {
+    if (cmd == "mcp" || cmd == "mcp status") {
+        printMCPStatus();
+    } else if (cmd == "mcp on") {
+        config_->setMCPEnabled(true);
+        utils::terminal::printSuccess("MCP enabled");
+        initializeMCP();
+    } else if (cmd == "mcp off") {
+        config_->setMCPEnabled(false);
+        mcp_client_->disconnectAll();
+        utils::terminal::printSuccess("MCP disabled");
+    } else if (cmd == "mcp servers") {
+        auto servers = config_->getMCPServers();
+        if (servers.empty()) {
+            std::cout << utils::terminal::YELLOW << "No MCP servers configured." << utils::terminal::RESET << "\n";
+            std::cout << "Add servers to: " << Config::getMCPConfigPath() << "\n\n";
+        } else {
+            std::cout << utils::terminal::CYAN << utils::terminal::BOLD << "Configured MCP Servers:" << utils::terminal::RESET << "\n\n";
+            for (const auto& server : servers) {
+                std::cout << "  " << utils::terminal::GREEN << server.name << utils::terminal::RESET << "\n";
+                std::cout << "    Command:   " << server.command << "\n";
+                if (!server.args.empty()) {
+                    std::cout << "    Args:      ";
+                    for (const auto& arg : server.args) {
+                        std::cout << arg << " ";
+                    }
+                    std::cout << "\n";
+                }
+                std::cout << "    Enabled:   " << (server.enabled ? "yes" : "no") << "\n";
+                std::cout << "    Transport: " << server.transport << "\n";
+                std::cout << "\n";
+            }
+        }
+    } else if (cmd == "mcp tools") {
+        printMCPTools();
+    } else {
+        utils::terminal::printError("Unknown MCP command. Try: /mcp, /mcp on, /mcp off, /mcp servers, /mcp tools");
+    }
+}
+
+std::string CLI::getMCPToolsPrompt() {
+    auto tools = mcp_client_->getAllTools();
+    if (tools.empty()) {
+        return "";
+    }
+
+    std::ostringstream prompt;
+    prompt << "\n\n## MCP Tools (External Services)\n\n";
+    prompt << "You also have access to these MCP (Model Context Protocol) tools from external servers:\n\n";
+
+    for (const auto& tool : tools) {
+        prompt << "**" << tool.serverName << "__" << tool.name << "** - " << tool.description << "\n";
+        if (!tool.inputSchema.empty() && tool.inputSchema.contains("properties")) {
+            prompt << "  Parameters:\n";
+            for (const auto& [name, schema] : tool.inputSchema["properties"].items()) {
+                prompt << "    - " << name;
+                if (schema.contains("description")) {
+                    prompt << ": " << schema["description"].get<std::string>();
+                }
+                prompt << "\n";
+            }
+        }
+        prompt << "\n";
+    }
+
+    prompt << "To call an MCP tool, use the format: serverName__toolName\n";
+    prompt << "Example:\n";
+    prompt << "<function_calls>\n";
+    prompt << "<invoke name=\"filesystem__read_file\">\n";
+    prompt << "<parameter name=\"path\">/path/to/file</parameter>\n";
+    prompt << "</invoke>\n";
+    prompt << "</function_calls>\n";
+
+    return prompt.str();
 }
 
 void CLI::printModels() {
@@ -208,7 +382,7 @@ void CLI::selectModel() {
 }
 
 std::string CLI::getSystemPrompt() {
-    return R"(You are an AI coding assistant with tool access. You MUST use tools to complete tasks - do NOT just describe what you would do.
+    std::string basePrompt = R"(You are an AI coding assistant with tool access. You MUST use tools to complete tasks - do NOT just describe what you would do.
 
 CRITICAL: When the user asks you to do something that requires a tool, you MUST output the XML tool call IMMEDIATELY. Do NOT explain what you're going to do. Do NOT say "I propose to..." or "Here's what I'll do...". Just output the tool call XML directly.
 
@@ -283,6 +457,14 @@ IMPORTANT RULES:
 3. Never describe what tool you would use - just use it
 4. After receiving tool results, provide a helpful summary to the user
 )";
+
+    // Append MCP tools if available
+    std::string mcpPrompt = getMCPToolsPrompt();
+    if (!mcpPrompt.empty()) {
+        return basePrompt + mcpPrompt;
+    }
+
+    return basePrompt;
 }
 
 json CLI::buildMessages(const std::string& user_message) {
@@ -594,6 +776,8 @@ void CLI::handleCommand(const std::string& input) {
     } else if (cmd == "auto off") {
         config_->setAutoApprove(false);
         utils::terminal::printSuccess("Auto-approve disabled");
+    } else if (utils::startsWith(cmd, "mcp")) {
+        handleMCPCommand(cmd);
     } else {
         utils::terminal::printError("Unknown command. Type '/help' for available commands.");
     }
@@ -730,6 +914,9 @@ int CLI::run() {
         utils::terminal::printWarning("Make sure Ollama is running with: ollama serve");
         return 1;
     }
+
+    // Initialize MCP if enabled
+    initializeMCP();
 
     // Single prompt mode or interactive mode
     if (!direct_prompt_.empty()) {

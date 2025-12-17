@@ -1,8 +1,12 @@
 #include "config.h"
 #include "utils.h"
 #include <iostream>
+#include <fstream>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 namespace ollamacode {
 
@@ -14,6 +18,7 @@ Config::Config()
     , max_tokens_(4096)
     , safe_mode_(true)
     , auto_approve_(false)
+    , mcp_enabled_(false)
 {
     // Default allowed commands
     allowed_commands_ = {
@@ -147,12 +152,16 @@ bool Config::load() {
         else if (key == "max_tokens") max_tokens_ = std::stoi(value);
         else if (key == "safe_mode") safe_mode_ = (value == "true" || value == "1");
         else if (key == "auto_approve") auto_approve_ = (value == "true" || value == "1");
+        else if (key == "mcp_enabled") mcp_enabled_ = (value == "true" || value == "1");
     }
 
     sqlite3_finalize(stmt);
 
     // Load allowed commands
     loadAllowedCommands();
+
+    // Load MCP servers from JSON config
+    loadMCPServers();
 
     return true;
 }
@@ -178,6 +187,7 @@ bool Config::save() {
     saveValue("max_tokens", std::to_string(max_tokens_));
     saveValue("safe_mode", safe_mode_ ? "true" : "false");
     saveValue("auto_approve", auto_approve_ ? "true" : "false");
+    saveValue("mcp_enabled", mcp_enabled_ ? "true" : "false");
 
     return true;
 }
@@ -258,6 +268,121 @@ void Config::setAutoApprove(bool enabled) {
     save();
 }
 
+void Config::setMCPEnabled(bool enabled) {
+    mcp_enabled_ = enabled;
+    save();
+}
+
+// MCP Server management
+std::vector<MCPServerConfig> Config::getMCPServers() const {
+    return mcp_servers_;
+}
+
+bool Config::addMCPServer(const MCPServerConfig& server) {
+    // Check if server already exists
+    for (const auto& s : mcp_servers_) {
+        if (s.name == server.name) {
+            return false;
+        }
+    }
+    mcp_servers_.push_back(server);
+    saveMCPServers();
+    return true;
+}
+
+bool Config::removeMCPServer(const std::string& name) {
+    auto it = std::find_if(mcp_servers_.begin(), mcp_servers_.end(),
+        [&name](const MCPServerConfig& s) { return s.name == name; });
+
+    if (it != mcp_servers_.end()) {
+        mcp_servers_.erase(it);
+        saveMCPServers();
+        return true;
+    }
+    return false;
+}
+
+bool Config::enableMCPServer(const std::string& name, bool enabled) {
+    for (auto& server : mcp_servers_) {
+        if (server.name == name) {
+            server.enabled = enabled;
+            saveMCPServers();
+            return true;
+        }
+    }
+    return false;
+}
+
+MCPServerConfig* Config::getMCPServer(const std::string& name) {
+    for (auto& server : mcp_servers_) {
+        if (server.name == name) {
+            return &server;
+        }
+    }
+    return nullptr;
+}
+
+void Config::loadMCPServers() {
+    mcp_servers_.clear();
+
+    std::string mcp_config_path = getMCPConfigPath();
+    std::ifstream file(mcp_config_path);
+    if (!file.is_open()) {
+        return;  // No MCP config file yet
+    }
+
+    try {
+        json config = json::parse(file);
+
+        if (config.contains("mcpServers") && config["mcpServers"].is_object()) {
+            for (const auto& [name, server] : config["mcpServers"].items()) {
+                MCPServerConfig sc;
+                sc.name = name;
+                sc.command = server.value("command", "");
+                sc.enabled = server.value("enabled", true);
+                sc.transport = server.value("transport", "stdio");
+                sc.url = server.value("url", "");
+
+                if (server.contains("args") && server["args"].is_array()) {
+                    sc.args = server["args"].get<std::vector<std::string>>();
+                }
+
+                if (server.contains("env") && server["env"].is_object()) {
+                    sc.env = server["env"].get<std::map<std::string, std::string>>();
+                }
+
+                mcp_servers_.push_back(sc);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading MCP config: " << e.what() << std::endl;
+    }
+}
+
+void Config::saveMCPServers() {
+    json config;
+    config["mcpServers"] = json::object();
+
+    for (const auto& sc : mcp_servers_) {
+        json server;
+        server["command"] = sc.command;
+        server["args"] = sc.args;
+        server["env"] = sc.env;
+        server["enabled"] = sc.enabled;
+        server["transport"] = sc.transport;
+        if (!sc.url.empty()) {
+            server["url"] = sc.url;
+        }
+        config["mcpServers"][sc.name] = server;
+    }
+
+    std::string mcp_config_path = getMCPConfigPath();
+    std::ofstream file(mcp_config_path);
+    if (file.is_open()) {
+        file << config.dump(2);
+    }
+}
+
 // Static methods
 std::string Config::getConfigDir() {
     return utils::joinPath(utils::getHomeDir(), ".config/ollamacode");
@@ -269,6 +394,10 @@ std::string Config::getConfigPath() {
 
 std::string Config::getHistoryPath() {
     return utils::joinPath(getConfigDir(), "history.txt");
+}
+
+std::string Config::getMCPConfigPath() {
+    return utils::joinPath(getConfigDir(), "mcp_servers.json");
 }
 
 } // namespace ollamacode

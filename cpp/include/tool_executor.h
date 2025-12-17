@@ -3,11 +3,13 @@
 
 #include <string>
 #include <functional>
+#include <memory>
 #include "tool_parser.h"
 
 namespace ollamacode {
 
 class Config; // Forward declaration
+class MCPClient; // Forward declaration
 
 struct ToolResult {
     bool success;
@@ -30,9 +32,14 @@ public:
     using ConfirmCallback = std::function<bool(const std::string&, const std::string&)>;
     void setConfirmCallback(ConfirmCallback callback);
 
+    // MCP Client integration
+    void setMCPClient(MCPClient* client);
+    bool isMCPTool(const std::string& tool_name) const;
+
 private:
     Config& config_;
     ConfirmCallback confirm_callback_;
+    MCPClient* mcp_client_;
 
     // Tool implementations
     ToolResult executeBash(const ToolCall& tool_call);
@@ -41,6 +48,7 @@ private:
     ToolResult executeEdit(const ToolCall& tool_call);
     ToolResult executeGlob(const ToolCall& tool_call);
     ToolResult executeGrep(const ToolCall& tool_call);
+    ToolResult executeMCPTool(const ToolCall& tool_call);
 
     // Helpers
     bool isCommandSafe(const std::string& command);

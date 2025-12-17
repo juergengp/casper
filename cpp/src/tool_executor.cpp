@@ -1,5 +1,6 @@
 #include "tool_executor.h"
 #include "config.h"
+#include "mcp_client.h"
 #include "utils.h"
 #include <iostream>
 #include <fstream>
@@ -14,7 +15,17 @@ namespace ollamacode {
 ToolExecutor::ToolExecutor(Config& config)
     : config_(config)
     , confirm_callback_(nullptr)
+    , mcp_client_(nullptr)
 {
+}
+
+void ToolExecutor::setMCPClient(MCPClient* client) {
+    mcp_client_ = client;
+}
+
+bool ToolExecutor::isMCPTool(const std::string& tool_name) const {
+    // MCP tools are prefixed with "serverName__toolName"
+    return tool_name.find("__") != std::string::npos;
 }
 
 void ToolExecutor::setConfirmCallback(ConfirmCallback callback) {
@@ -445,7 +456,77 @@ ToolResult ToolExecutor::executeGrep(const ToolCall& tool_call) {
     return result;
 }
 
+ToolResult ToolExecutor::executeMCPTool(const ToolCall& tool_call) {
+    ToolResult result;
+
+    if (!mcp_client_) {
+        result.success = false;
+        result.error = "MCP client not initialized";
+        utils::terminal::printError(result.error);
+        return result;
+    }
+
+    // Parse tool name: "serverName__toolName"
+    size_t pos = tool_call.name.find("__");
+    if (pos == std::string::npos) {
+        result.success = false;
+        result.error = "Invalid MCP tool name format";
+        utils::terminal::printError(result.error);
+        return result;
+    }
+
+    std::string server_name = tool_call.name.substr(0, pos);
+    std::string tool_name = tool_call.name.substr(pos + 2);
+
+    utils::terminal::printInfo("[MCP Tool: " + server_name + "/" + tool_name + "]");
+
+    // Convert parameters to JSON
+    json arguments;
+    for (const auto& [key, value] : tool_call.parameters) {
+        // Try to parse as JSON, fallback to string
+        try {
+            arguments[key] = json::parse(value);
+        } catch (...) {
+            arguments[key] = value;
+        }
+    }
+
+    std::cout << utils::terminal::CYAN << "Arguments: " << arguments.dump(2) << utils::terminal::RESET << "\n\n";
+
+    // Confirm execution
+    if (!requestConfirmation("MCP:" + tool_name, "Execute MCP tool?")) {
+        result.success = false;
+        result.error = "Cancelled by user";
+        utils::terminal::printError("Cancelled");
+        return result;
+    }
+
+    // Execute via MCP client
+    utils::terminal::printInfo("Executing MCP tool...");
+    MCPToolResult mcp_result = mcp_client_->callTool(tool_name, arguments);
+
+    result.success = mcp_result.success;
+    result.output = mcp_result.content;
+    result.error = mcp_result.error;
+    result.exit_code = mcp_result.isError ? 1 : 0;
+
+    if (result.success) {
+        utils::terminal::printSuccess("MCP tool executed successfully");
+    } else {
+        utils::terminal::printError("MCP tool failed: " + result.error);
+    }
+
+    std::cout << "\n=== MCP Output ===\n" << result.output << "\n==================\n\n";
+
+    return result;
+}
+
 ToolResult ToolExecutor::execute(const ToolCall& tool_call) {
+    // Check if this is an MCP tool
+    if (isMCPTool(tool_call.name)) {
+        return executeMCPTool(tool_call);
+    }
+
     if (tool_call.name == "Bash") {
         return executeBash(tool_call);
     } else if (tool_call.name == "Read") {

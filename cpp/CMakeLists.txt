@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(ollamacode VERSION 2.0.1 LANGUAGES CXX)
+project(ollamacode VERSION 2.0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,6 +44,7 @@ set(SOURCES
     src/utils.cpp
     src/session_manager.cpp
     src/command_menu.cpp
+    src/mcp_client.cpp
 )
 
 # Header files
@@ -56,6 +57,7 @@ set(HEADERS
     include/utils.h
     include/session_manager.h
     include/command_menu.h
+    include/mcp_client.h
     include/json.hpp
 )
 

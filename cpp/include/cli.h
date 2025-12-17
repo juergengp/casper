@@ -10,6 +10,7 @@
 #include "tool_executor.h"
 #include "session_manager.h"
 #include "command_menu.h"
+#include "mcp_client.h"
 
 namespace ollamacode {
 
@@ -49,6 +50,13 @@ private:
     void printModels();
     void selectModel();
 
+    // MCP helpers
+    void initializeMCP();
+    void printMCPStatus();
+    void printMCPTools();
+    void handleMCPCommand(const std::string& cmd);
+    std::string getMCPToolsPrompt();
+
     // Command handlers
     void handleCommand(const std::string& input);
 
@@ -62,6 +70,7 @@ private:
     std::unique_ptr<ToolExecutor> executor_;
     std::unique_ptr<SessionManager> session_manager_;
     std::unique_ptr<CommandMenu> command_menu_;
+    std::unique_ptr<MCPClient> mcp_client_;
 
     // Options from command line
     std::string direct_prompt_;
