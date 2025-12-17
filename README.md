@@ -1,273 +1,451 @@
-# ollamaCode
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="ollamaCode Logo" width="120">
+</p>
 
-Interactive CLI for Ollama - Inspired by Claude Code
+<h1 align="center">ollamaCode</h1>
 
-**Platforms**: macOS (Intel & Apple Silicon) | Linux (Fedora, RHEL, CentOS, Debian, Ubuntu)
+<p align="center">
+  <strong>Run AI coding assistants locally with Ollama - Claude Code experience, zero cloud dependency</strong>
+</p>
 
-**Available in two versions:**
-- 🐚 **Bash** - No compilation needed, install in seconds
-- ⚡ **C++** - High performance, requires compilation ([see cpp/](cpp/))
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#mcp-support">MCP Support</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#documentation">Documentation</a>
+</p>
 
-**Not sure which?** See [VERSIONS.md](VERSIONS.md) for comparison. Most users should start with the Bash version below.
+<p align="center">
+  <img src="https://img.shields.io/badge/version-2.0.2-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/Ollama-compatible-orange.svg" alt="Ollama">
+  <img src="https://img.shields.io/badge/MCP-supported-purple.svg" alt="MCP">
+</p>
+
+---
+
+## What is ollamaCode?
+
+**ollamaCode** brings the power of AI coding assistants to your local machine. It's like having Claude Code or GitHub Copilot, but running entirely on your hardware with your choice of open-source LLMs via [Ollama](https://ollama.ai).
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│    ____  _ _                       ____          _              │
+│   / __ \| | | __ _ _ __ ___   __ _/ ___|___   __| | ___         │
+│  | |  | | | |/ _` | '_ ` _ \ / _` | |   / _ \ / _` |/ _ \        │
+│  | |__| | | | (_| | | | | | | (_| | |__| (_) | (_| |  __/        │
+│   \____/|_|_|\__,_|_| |_| |_|\__,_|\____\___/ \__,_|\___|        │
+│                                                                 │
+│  Interactive CLI for Ollama - Version 2.0.2 (C++)               │
+│  Type '/help' for commands, '/exit' to quit                     │
+│                                                                 │
+│  Current Configuration:                                         │
+│    Model:        llama3.1                                       │
+│    Host:         http://localhost:11434                         │
+│    Temperature:  0.7                                            │
+│    MCP Enabled:  yes                                            │
+│                                                                 │
+│  You> Find all TODO comments in my project                      │
+│                                                                 │
+│  🔧 Executing 1 tool(s)...                                      │
+│  [Tool: Grep]                                                   │
+│  Pattern: TODO                                                  │
+│  Path: .                                                        │
+│                                                                 │
+│  === Search Results ===                                         │
+│  src/main.cpp:42: // TODO: Add error handling                   │
+│  src/utils.cpp:15: // TODO: Optimize this function              │
+│  =====================                                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ## Features
 
-- 🚀 **Interactive Chat Mode** - Natural conversation with your local LLMs
-- 🔧 **Tool Execution** - AI can execute commands on your machine (with safety controls)
-- 🎨 **Syntax Highlighting** - Beautiful terminal output
-- 📊 **Statistics** - Token count, speed, and timing information
-- 🔄 **Multi-Model Support** - Switch between models on the fly
-- 💾 **Session Management** - Save and load conversations
-- ⚙️ **Configuration** - Customizable settings and prompts
-- 🔐 **Safe Mode** - Command execution with allowlist and confirmations
+### Core Capabilities
 
-## Installation
+| Feature | Description |
+|---------|-------------|
+| **Local AI** | Run powerful LLMs locally - no API keys, no cloud, complete privacy |
+| **Tool Execution** | AI can read files, run commands, search code, and edit files |
+| **MCP Protocol** | Connect to external services via Model Context Protocol |
+| **Interactive CLI** | Beautiful terminal interface with syntax highlighting |
+| **Multi-Model** | Switch between models on the fly (`/model`) |
+| **Safe Mode** | Command allowlists and confirmation prompts |
 
-### Universal Installer (All Platforms)
+### Built-in Tools
 
-```bash
-# Works on macOS, Fedora, RHEL, CentOS, Debian, Ubuntu
-cd ollamaCode
-chmod +x install.sh
-./install.sh
+The AI assistant has access to these tools to help with your tasks:
+
+```
+┌──────────┬────────────────────────────────────────────────────┐
+│ Tool     │ Description                                        │
+├──────────┼────────────────────────────────────────────────────┤
+│ Bash     │ Execute shell commands with safety controls        │
+│ Read     │ Read file contents                                 │
+│ Write    │ Create or overwrite files                          │
+│ Edit     │ Make targeted edits to existing files              │
+│ Glob     │ Find files by pattern (e.g., **/*.py)              │
+│ Grep     │ Search for text/patterns in files                  │
+└──────────┴────────────────────────────────────────────────────┘
 ```
 
-### Fedora / RHEL / CentOS
+### MCP (Model Context Protocol) Support
 
-```bash
-# Install dependencies
-sudo dnf install -y curl jq ollama
+Connect your local Ollama models to external tools and services:
 
-# Install ollamaCode RPM
-sudo rpm -ivh ollamacode-1.0.0-1.fc41.noarch.rpm
-
-# Or build from source
-cd /root/ollamaCode
-./build-rpm.sh
-sudo rpm -ivh ~/rpmbuild/RPMS/noarch/ollamacode-1.0.0-1.fc41.noarch.rpm
+```
+┌─────────────────┐     MCP Protocol     ┌──────────────┐
+│   ollamaCode    │ ◄──────────────────► │  MCP Servers │
+│  (Ollama LLM)   │     (JSON-RPC)       │  - GitHub    │
+└─────────────────┘                      │  - Filesystem│
+                                         │  - Database  │
+                                         │  - Web Search│
+                                         └──────────────┘
 ```
 
-### macOS
-
-```bash
-# Option 1: Universal installer (recommended)
-cd /root/ollamaCode
-chmod +x install.sh
-./install.sh
-
-# Option 2: macOS-specific installer
-cd /root/ollamaCode/macos
-chmod +x install.sh
-./install.sh
-```
-
-The installer will automatically:
-- Install Homebrew (if not present)
-- Install jq and curl
-- Install Ollama (with confirmation)
-- Set up ollamacode in /usr/local/bin
-- Create configuration directory
-
-**For detailed macOS instructions, see:**
-- [MACOS_QUICKSTART.md](MACOS_QUICKSTART.md) - Get started in 5 minutes
-- [MACOS_SETUP.md](MACOS_SETUP.md) - Comprehensive guide
-
-### Manual Installation
-
-```bash
-# Install dependencies
-# Fedora/RHEL:
-sudo dnf install -y curl jq
-
-# macOS:
-brew install curl jq
-
-# Install ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Install ollamaCode
-cd /root/ollamaCode
-sudo cp bin/ollamacode /usr/local/bin/
-sudo chmod +x /usr/local/bin/ollamacode
-```
+**Available MCP Servers:**
+- **filesystem** - Access local files and directories
+- **github** - Interact with GitHub repositories
+- **brave-search** - Web search capabilities
+- **sqlite** - Query SQLite databases
+- **puppeteer** - Browser automation
+- And many more from the [MCP ecosystem](https://github.com/modelcontextprotocol/servers)
 
 ## Quick Start
 
+### 1. Install Ollama
+
 ```bash
-# Start interactive mode
+# macOS / Linux
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama
+ollama serve
+```
+
+### 2. Pull a Model
+
+```bash
+# Recommended models for tool use
+ollama pull llama3.1        # Good balance of speed and capability
+ollama pull qwen2.5:14b     # Excellent at following instructions
+ollama pull codellama       # Optimized for coding tasks
+```
+
+### 3. Install ollamaCode
+
+```bash
+# Clone the repository
+git clone https://github.com/juergengp/ollamaCode.git
+cd ollamaCode
+
+# Option A: Use pre-built binary (macOS)
+cp bin/ollamacode /usr/local/bin/
+
+# Option B: Build from source
+cd cpp
+mkdir build && cd build
+cmake ..
+make
+cp ollamacode /usr/local/bin/
+```
+
+### 4. Run!
+
+```bash
+# Interactive mode
 ollamacode
 
 # Single prompt
-ollamacode "Explain Docker containers"
+ollamacode "Explain this codebase structure"
 
-# Use specific model
-ollamacode -m llama3 "Hello"
+# With MCP enabled
+ollamacode --mcp
+```
 
-# Read prompt from file
-ollamacode -f prompt.txt
+## Usage Examples
 
-# Custom system prompt
-ollamacode --system "You are a DevOps expert" "Setup nginx"
+### Code Analysis
+
+```bash
+You> Analyze the main.cpp file and suggest improvements
+
+🔧 Executing 1 tool(s)...
+[Tool: Read]
+File: main.cpp
+
+✓ Success
+
+I've analyzed main.cpp. Here are my suggestions:
+
+1. **Error Handling**: Line 42 lacks proper error handling...
+2. **Memory Management**: Consider using smart pointers...
+3. **Code Organization**: The function on line 78 is too long...
+```
+
+### File Operations
+
+```bash
+You> Create a Python script that reads JSON files
+
+🔧 Executing 1 tool(s)...
+[Tool: Write]
+File: read_json.py
+
+✓ File written successfully
+Lines written: 25
+
+I've created read_json.py with the following features:
+- Reads JSON files from command line arguments
+- Pretty prints the content
+- Handles errors gracefully
+```
+
+### Search and Navigate
+
+```bash
+You> Find all files that import the Config class
+
+🔧 Executing 1 tool(s)...
+[Tool: Grep]
+Pattern: import.*Config|from.*import.*Config
+Mode: files_with_matches
+
+=== Search Results ===
+src/main.py
+src/utils/settings.py
+tests/test_config.py
+=====================
+
+Found 3 files that import Config.
+```
+
+### MCP Integration
+
+```bash
+# Enable MCP and connect to GitHub
+You> /mcp on
+✓ MCP enabled
+Connecting to MCP servers...
+  [MCP] github: connected (15 tools)
+
+You> List my recent GitHub issues
+
+🔧 Executing 1 tool(s)...
+[MCP Tool: github/list_issues]
+
+Found 5 open issues:
+1. #42 - Add support for streaming responses
+2. #38 - Improve error messages
+...
 ```
 
 ## Interactive Commands
 
 | Command | Description |
 |---------|-------------|
-| `help` | Show available commands |
-| `models` | List available models |
-| `use MODEL` | Switch to different model |
-| `temp NUM` | Set temperature (0.0-2.0) |
-| `system PROMPT` | Set system prompt |
-| `history` | Show conversation history |
-| `config` | Show current configuration |
-| `clear` | Clear screen |
-| `exit`, `quit` | Exit ollamaCode |
-
-## Tool Functions
-
-ollamaCode includes built-in tools that the AI can use:
-
-### Available Tools
-
-- **bash** - Execute shell commands
-- **read** - Read file contents
-- **write** - Write to files
-- **glob** - Find files by pattern
-- **grep** - Search in files
-- **git** - Git operations (status, diff, log, add)
-- **sysinfo** - System information
-- **docker** - Docker operations
-- **ps** - Process information
-- **netstat** - Network status
-
-### Safety Features
-
-- **Safe Mode** (default): Only allows pre-approved commands
-- **Confirmation Required**: User must approve each command
-- **Allowlist**: Configurable list of allowed commands
-
-### Disable Safe Mode
-
-```bash
-# Allow all commands (use with caution!)
-SAFE_MODE=false ollamacode
-```
+| `/help` | Show available commands |
+| `/models` | List available Ollama models |
+| `/model` | Interactive model selector |
+| `/use MODEL` | Switch to a specific model |
+| `/temp NUM` | Set temperature (0.0-2.0) |
+| `/safe on/off` | Toggle safe mode |
+| `/auto on/off` | Toggle auto-approve for tools |
+| `/mcp` | Show MCP status |
+| `/mcp on/off` | Enable/disable MCP |
+| `/mcp tools` | List available MCP tools |
+| `/config` | Show current configuration |
+| `/clear` | Clear the screen |
+| `/exit` | Exit ollamaCode |
 
 ## Configuration
 
-Configuration file: `~/.config/ollamacode/config`
+### Main Configuration
+
+Settings are stored in `~/.config/ollamacode/config.db` (SQLite) and include:
+
+- Model selection
+- Temperature
+- Max tokens
+- Safe mode settings
+- Auto-approve settings
+- MCP enabled state
+
+### MCP Server Configuration
+
+Configure MCP servers in `~/.config/ollamacode/mcp_servers.json`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/projects"],
+      "enabled": true,
+      "transport": "stdio"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_xxxxxxxxxxxx"
+      },
+      "enabled": true,
+      "transport": "stdio"
+    }
+  }
+}
+```
+
+See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for detailed MCP configuration.
+
+## Recommended Models
+
+| Model | Size | Best For | Tool Use |
+|-------|------|----------|----------|
+| `llama3.1` | 8B | General coding tasks | Excellent |
+| `llama3.1:70b` | 70B | Complex reasoning | Excellent |
+| `qwen2.5:14b` | 14B | Instruction following | Excellent |
+| `codellama` | 7B | Code generation | Good |
+| `mistral-nemo` | 12B | Balanced performance | Good |
+| `deepseek-coder` | 6.7B | Code-specific tasks | Good |
+
+## Installation
+
+### Pre-built Binary (macOS)
 
 ```bash
-# Model to use
-MODEL=coreEchoFlux
-
-# Ollama API host
-OLLAMA_HOST=http://localhost:11434
-
-# Generation parameters
-TEMPERATURE=0.7
-MAX_TOKENS=2048
-
-# System prompt
-SYSTEM_PROMPT="You are a helpful AI coding assistant."
+git clone https://github.com/juergengp/ollamaCode.git
+cd ollamaCode
+sudo cp bin/ollamacode /usr/local/bin/
 ```
 
-## Examples
+### Build from Source
 
-### Interactive Session
+**Requirements:**
+- CMake 3.15+
+- C++17 compiler (clang or gcc)
+- libcurl
+- SQLite3
 
+**macOS:**
 ```bash
-$ ollamacode
-   ____  _ _                       ____          _
-  / __ \| | | __ _ _ __ ___   __ _/ ___|___   __| | ___
- | |  | | | |/ _` | '_ ` _ \ / _` | |   / _ \ / _` |/ _ \
- | |__| | | | (_| | | | | | | (_| | |__| (_) | (_| |  __/
-  \____/|_|_|\__,_|_| |_| |_|\__,_|\____\___/ \__,_|\___|
+# Install dependencies
+brew install cmake curl sqlite3
 
-Interactive CLI for Ollama - Version 1.0.0
-Type 'help' for commands, 'exit' to quit
-
-Current Configuration:
-  Model:        coreEchoFlux
-  Host:         http://localhost:11434
-  Temperature:  0.7
-  Max Tokens:   2048
-
-You> List all Docker containers
-
-Thinking...
-
-<AI response here>
-
-───────────────────────────────────────
-Stats: 3s | 150 tokens | 50.0 tok/s
+# Build
+cd ollamaCode/cpp
+mkdir build && cd build
+cmake ..
+make
+sudo cp ollamacode /usr/local/bin/
 ```
 
-### Direct Prompt
-
+**Linux (Debian/Ubuntu):**
 ```bash
-$ ollamacode "Write a Python script to read CSV files"
-Thinking...
+# Install dependencies
+sudo apt install cmake build-essential libcurl4-openssl-dev libsqlite3-dev
 
-Here's a Python script to read CSV files:
-
-```python
-import csv
-
-def read_csv(filename):
-    with open(filename, 'r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            print(row)
-
-read_csv('data.csv')
-```
+# Build
+cd ollamaCode/cpp
+mkdir build && cd build
+cmake ..
+make
+sudo cp ollamacode /usr/local/bin/
 ```
 
-### With Custom Settings
-
+**Linux (Fedora/RHEL):**
 ```bash
-$ ollamacode -m llama3 -t 0.2 "Explain recursion"
+# Install dependencies
+sudo dnf install cmake gcc-c++ libcurl-devel sqlite-devel
+
+# Build
+cd ollamaCode/cpp
+mkdir build && cd build
+cmake ..
+make
+sudo cp ollamacode /usr/local/bin/
 ```
 
-## Building RPM Package
+## Documentation
 
-```bash
-cd /root/ollamaCode
-./build-rpm.sh
+| Document | Description |
+|----------|-------------|
+| [MCP_SETUP.md](docs/MCP_SETUP.md) | Complete MCP configuration guide |
+| [MACOS_QUICKSTART.md](MACOS_QUICKSTART.md) | Quick start guide for macOS |
+| [MACOS_SETUP.md](MACOS_SETUP.md) | Detailed macOS setup |
+| [VERSIONS.md](VERSIONS.md) | Comparison of Bash vs C++ versions |
+
+## Architecture
+
+```
+ollamaCode/
+├── bin/                    # Pre-built binaries
+│   └── ollamacode         # macOS binary
+├── cpp/                    # C++ source code
+│   ├── include/           # Header files
+│   │   ├── cli.h
+│   │   ├── config.h
+│   │   ├── mcp_client.h   # MCP client
+│   │   ├── ollama_client.h
+│   │   ├── tool_executor.h
+│   │   └── tool_parser.h
+│   ├── src/               # Implementation
+│   │   ├── main.cpp
+│   │   ├── cli.cpp
+│   │   ├── mcp_client.cpp
+│   │   └── ...
+│   └── CMakeLists.txt
+├── docs/                   # Documentation
+│   └── MCP_SETUP.md
+├── examples/              # Example configurations
+│   └── mcp_servers.json
+└── lib/                   # Bash version (legacy)
 ```
 
-The RPM will be created in `~/rpmbuild/RPMS/noarch/`
+## Why ollamaCode?
 
-## Requirements
-
-- Bash 4.0+
-- curl
-- jq
-- ollama
-
-## License
-
-MIT License
-
-## Author
-
-Core.at - <support@core.at>
+| Feature | ollamaCode | Claude Code | GitHub Copilot |
+|---------|------------|-------------|----------------|
+| **Privacy** | 100% Local | Cloud | Cloud |
+| **Cost** | Free | Subscription | Subscription |
+| **Models** | Any Ollama model | Claude only | GPT only |
+| **Offline** | Yes | No | No |
+| **MCP Support** | Yes | Yes | No |
+| **Open Source** | Yes | No | No |
+| **Customizable** | Fully | Limited | Limited |
 
 ## Contributing
 
-Contributions welcome! Please submit pull requests or open issues.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Changelog
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### v1.0.0 (2025-10-16)
-- Initial release
-- Interactive chat mode
-- Tool execution with safety controls
-- Multi-model support
-- Configuration management
-- RPM package for Fedora
-- macOS installation script
-- Session history
-- Statistics display
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Ollama](https://ollama.ai) - For making local LLMs accessible
+- [Anthropic](https://anthropic.com) - For the MCP protocol specification
+- [nlohmann/json](https://github.com/nlohmann/json) - JSON library for C++
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://core.at">Core.at</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/juergengp/ollamaCode/issues">Report Bug</a> •
+  <a href="https://github.com/juergengp/ollamaCode/issues">Request Feature</a>
+</p>
