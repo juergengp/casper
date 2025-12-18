@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.4-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.0.5-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/Ollama-compatible-orange.svg" alt="Ollama">
@@ -26,7 +26,7 @@
 
 ---
 
-## What's New in v2.0.4
+## What's New in v2.0.5
 
 - **Remote Ollama Support** - New `/host` command to connect to remote Ollama instances
 - **Specialized Agent System** - Automatic task analysis with agent suggestions (Explorer, Coder, Runner, Planner)
@@ -49,7 +49,7 @@
 │  | |__| | | | (_| | | | | | | (_| | |__| (_) | (_| |  __/        │
 │   \____/|_|_|\__,_|_| |_| |_|\__,_|\____\___/ \__,_|\___|        │
 │                                                                 │
-│  Interactive CLI for Ollama - Version 2.0.4 (C++)               │
+│  Interactive CLI for Ollama - Version 2.0.5 (C++)               │
 │  Type '/help' for commands, '/exit' to quit                     │
 │                                                                 │
 │  Current Configuration:                                         │
