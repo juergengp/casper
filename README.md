@@ -206,6 +206,10 @@ ollamacode "Explain this codebase structure"
 
 # With MCP enabled
 ollamacode --mcp
+
+# Connect to remote Ollama instance
+ollamacode
+/host http://192.168.1.100:11434
 ```
 
 ## Usage Examples
@@ -263,6 +267,24 @@ tests/test_config.py
 =====================
 
 Found 3 files that import Config.
+```
+
+### Remote Ollama
+
+```bash
+# Connect to Ollama on another machine
+You> /host http://192.168.1.100:11434
+✓ Ollama host set to: http://192.168.1.100:11434
+✓ Connected! 5 models available.
+
+# Check current host
+You> /host
+Current host: http://192.168.1.100:11434
+
+# Switch back to local
+You> /host localhost:11434
+✓ Ollama host set to: http://localhost:11434
+✓ Connected! 7 models available.
 ```
 
 ### MCP Integration
