@@ -16,14 +16,18 @@ find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 
 # Optional: readline for better CLI
-# On macOS, Homebrew installs readline as keg-only, so we need to set the path
-if(APPLE)
-    set(ENV{PKG_CONFIG_PATH} "/opt/homebrew/opt/readline/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-endif()
+option(USE_READLINE "Use readline library for better CLI" ON)
 
-find_package(PkgConfig)
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(READLINE readline)
+if(USE_READLINE)
+    # On macOS, Homebrew installs readline as keg-only, so we need to set the path
+    if(APPLE)
+        set(ENV{PKG_CONFIG_PATH} "/opt/homebrew/opt/readline/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+    endif()
+
+    find_package(PkgConfig)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(READLINE readline)
+    endif()
 endif()
 
 # Include directories
