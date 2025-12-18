@@ -369,10 +369,17 @@ See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for detailed MCP configuration.
 
 ## Installation
 
+### Homebrew (macOS) - Recommended
+
+```bash
+brew tap juergengp/ollamacode https://github.com/juergengp/ollamaCode
+brew install ollamacode
+```
+
 ### Pre-built Binary (macOS)
 
 ```bash
-# Option A: Download universal binary directly (recommended)
+# Option A: Download universal binary directly
 curl -L https://github.com/juergengp/ollamaCode/releases/latest/download/ollamacode-macos-universal -o ollamacode
 chmod +x ollamacode
 sudo mv ollamacode /usr/local/bin/
