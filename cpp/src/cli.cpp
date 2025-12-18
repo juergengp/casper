@@ -154,6 +154,9 @@ MCP SERVERS:
     Configure MCP servers in ~/.config/ollamacode/mcp_servers.json
     See docs/MCP_SETUP.md for configuration examples
 
+WHAT'S NEW in v2.0.5:
+    - Fixed slash menu positioning when near terminal bottom
+
 )";
 }
 
