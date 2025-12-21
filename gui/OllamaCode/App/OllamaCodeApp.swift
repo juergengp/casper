@@ -48,6 +48,7 @@ class AppState: ObservableObject {
     @Published var currentAgent: AgentType = .general
     @Published var isConnected: Bool = false
     @Published var currentModel: String = "llama3"
+    @Published var availableModels: [String] = []
 
     private let configService = ConfigService.shared
     private let ollamaService = OllamaService.shared
@@ -56,6 +57,7 @@ class AppState: ObservableObject {
         loadConfiguration()
         Task {
             await checkConnection()
+            await refreshModels()
         }
     }
 
@@ -65,6 +67,23 @@ class AppState: ObservableObject {
 
     func checkConnection() async {
         isConnected = await ollamaService.testConnection()
+    }
+
+    func refreshModels() async {
+        do {
+            let models = try await ollamaService.listModels()
+            availableModels = models.map { $0.name }
+            isConnected = true
+        } catch {
+            availableModels = []
+            isConnected = false
+        }
+    }
+
+    func selectModel(_ model: String) {
+        currentModel = model
+        configService.model = model
+        configService.save()
     }
 
     func selectAgent(_ agent: AgentType) {

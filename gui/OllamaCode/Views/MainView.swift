@@ -41,14 +41,42 @@ struct MainView: View {
 
     @ViewBuilder
     private var toolbarContent: some View {
-        // Connection status
-        HStack(spacing: 4) {
+        // Connection status and model
+        HStack(spacing: 6) {
             Circle()
                 .fill(appState.isConnected ? Color.green : Color.red)
                 .frame(width: 8, height: 8)
-            Text(appState.currentModel)
-                .font(.caption)
-                .foregroundColor(.secondary)
+
+            Menu {
+                ForEach(appState.availableModels, id: \.self) { model in
+                    Button(model) {
+                        appState.selectModel(model)
+                    }
+                }
+
+                Divider()
+
+                Button("Refresh Models") {
+                    Task {
+                        await appState.refreshModels()
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "cpu")
+                        .font(.caption)
+                    Text(appState.currentModel)
+                        .font(.system(.body, design: .rounded))
+                        .fontWeight(.medium)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
         }
 
         Divider()

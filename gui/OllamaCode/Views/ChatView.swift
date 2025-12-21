@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Main chat view with message list and input
 struct ChatView: View {
@@ -103,21 +104,17 @@ struct ChatView: View {
 
     private var inputArea: some View {
         HStack(alignment: .bottom, spacing: 12) {
-            // Text editor
-            ZStack(alignment: .topLeading) {
-                if viewModel.inputText.isEmpty {
-                    Text("Type a message...")
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 10)
+            // Text editor with Enter to send
+            ChatInputField(
+                text: $viewModel.inputText,
+                placeholder: "Type a message...",
+                isDisabled: viewModel.isLoading,
+                onSubmit: {
+                    Task {
+                        await viewModel.sendMessage()
+                    }
                 }
-
-                TextEditor(text: $viewModel.inputText)
-                    .font(.body)
-                    .scrollContentBackground(.hidden)
-                    .padding(4)
-                    .focused($isInputFocused)
-            }
+            )
             .frame(minHeight: 40, maxHeight: 200)
             .background(Color(nsColor: .textBackgroundColor))
             .cornerRadius(8)
@@ -138,7 +135,6 @@ struct ChatView: View {
             }
             .buttonStyle(.plain)
             .disabled(viewModel.inputText.isEmpty || viewModel.isLoading)
-            .keyboardShortcut(.return, modifiers: .command)
         }
         .padding()
         .background(Color(nsColor: .windowBackgroundColor))
@@ -174,6 +170,114 @@ struct QuickActionButton: View {
             .cornerRadius(8)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Custom text input that sends on Enter and inserts newline on Shift+Enter
+struct ChatInputField: NSViewRepresentable {
+    @Binding var text: String
+    var placeholder: String
+    var isDisabled: Bool
+    var onSubmit: () -> Void
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        let textView = ChatTextView()
+
+        textView.delegate = context.coordinator
+        textView.isRichText = false
+        textView.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        textView.backgroundColor = .clear
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        textView.allowsUndo = true
+        textView.placeholderString = placeholder
+        textView.onSubmit = onSubmit
+
+        scrollView.documentView = textView
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.backgroundColor = .clear
+        scrollView.drawsBackground = false
+
+        context.coordinator.textView = textView
+
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? ChatTextView else { return }
+
+        if textView.string != text {
+            textView.string = text
+        }
+
+        textView.isEditable = !isDisabled
+        textView.onSubmit = onSubmit
+        textView.placeholderString = placeholder
+        textView.needsDisplay = true
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    class Coordinator: NSObject, NSTextViewDelegate {
+        var text: Binding<String>
+        weak var textView: NSTextView?
+
+        init(text: Binding<String>) {
+            self.text = text
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            text.wrappedValue = textView.string
+        }
+    }
+}
+
+/// Custom NSTextView that handles Enter to submit
+class ChatTextView: NSTextView {
+    var placeholderString: String = ""
+    var onSubmit: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        // Check for Enter key (keyCode 36)
+        if event.keyCode == 36 {
+            // Shift+Enter = newline
+            if event.modifierFlags.contains(.shift) {
+                insertNewline(nil)
+                return
+            }
+
+            // Plain Enter = submit (if there's text)
+            if !self.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                onSubmit?()
+                return
+            }
+        }
+
+        super.keyDown(with: event)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        // Draw placeholder if empty
+        if string.isEmpty && !placeholderString.isEmpty {
+            let attrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: NSColor.placeholderTextColor,
+                .font: font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+            ]
+            let placeholder = NSAttributedString(string: placeholderString, attributes: attrs)
+            placeholder.draw(at: NSPoint(x: textContainerInset.width + 5, y: textContainerInset.height))
+        }
     }
 }
 
