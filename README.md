@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.2.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-2.3.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/Ollama-compatible-orange.svg" alt="Ollama">
@@ -27,7 +27,15 @@
 
 ---
 
-## What's New in v2.2.0
+## What's New in v2.3.0
+
+- **🔧 Custom Model Builder** - Create custom LLMs with Modelfile support (`/model create`)
+- **📦 Model Management** - Pull, push, copy, delete models with progress tracking
+- **📝 Prompt Database** - Store, organize, and reuse prompts with categories
+- **🔑 License System** - Tiered licensing (Free, Basic, Pro, Enterprise)
+- **New Commands** - `/model`, `/prompt`, `/license` command families
+
+### v2.2.0
 
 - **🌐 Searcher Agent** - Web research with DuckDuckGo search and web spider
 - **🗄️ Database Agent** - Query SQLite, PostgreSQL, and MySQL databases
@@ -398,6 +406,38 @@ Found 5 open issues:
 | `/learn`, `/memory`, `/rag` | Switch to Learner agent (RAG knowledge) |
 | `/general` | Switch to General agent (all tools) |
 
+### Model Management Commands
+
+| Command | Description |
+|---------|-------------|
+| `/model create` | Interactive custom model creation wizard |
+| `/model show <name>` | Display detailed model information |
+| `/model copy <src> <dst>` | Clone/copy a model |
+| `/model delete <name>` | Delete a model |
+| `/model pull <name>` | Download model from Ollama library |
+| `/model push <name>` | Upload model to ollama.ai |
+
+### Prompt Database Commands
+
+| Command | Description |
+|---------|-------------|
+| `/prompt` | Interactive prompt selector |
+| `/prompt add` | Add new prompt with category |
+| `/prompt edit <name>` | Edit existing prompt |
+| `/prompt delete <name>` | Delete a prompt |
+| `/prompt list` | List all prompts |
+| `/prompt search <query>` | Search prompts by name/content |
+| `/prompt export <file>` | Export prompts to JSON |
+| `/prompt import <file>` | Import prompts from JSON |
+
+### License Commands
+
+| Command | Description |
+|---------|-------------|
+| `/license` | Show license status and features |
+| `/license activate <key>` | Activate a license key |
+| `/license deactivate` | Remove current license |
+
 ## Configuration
 
 ### Main Configuration
@@ -410,6 +450,19 @@ Settings are stored in `~/.config/ollamacode/config.db` (SQLite) and include:
 - Safe mode settings
 - Auto-approve settings
 - MCP enabled state
+
+### License Tiers
+
+| Feature | Free | Basic | Pro | Enterprise |
+|---------|------|-------|-----|------------|
+| Chat & Tools | ✓ | ✓ | ✓ | ✓ |
+| Model Switch | ✓ | ✓ | ✓ | ✓ |
+| Model Pull/Delete | ✓ | ✓ | ✓ | ✓ |
+| Prompt Database | - | ✓ | ✓ | ✓ |
+| Max Prompts | - | 50 | 500 | Unlimited |
+| Custom Model Creation | - | - | ✓ | ✓ |
+| Model Push/Copy | - | - | ✓ | ✓ |
+| Prompt Export/Import | - | - | ✓ | ✓ |
 
 ### New v2.2.0 Settings
 
@@ -574,8 +627,11 @@ ollamaCode/
 │   │   ├── agent.h        # Agent system
 │   │   ├── cli.h
 │   │   ├── config.h
+│   │   ├── license.h      # License system
 │   │   ├── mcp_client.h   # MCP client
+│   │   ├── model_manager.h # Model management
 │   │   ├── ollama_client.h
+│   │   ├── prompt_db.h    # Prompt database
 │   │   ├── task_suggester.h # Task analysis
 │   │   ├── tool_executor.h
 │   │   └── tool_parser.h
@@ -583,7 +639,10 @@ ollamaCode/
 │   │   ├── main.cpp
 │   │   ├── agent.cpp      # Agent definitions
 │   │   ├── cli.cpp
+│   │   ├── license.cpp    # License validation
 │   │   ├── mcp_client.cpp
+│   │   ├── model_manager.cpp # Modelfile builder
+│   │   ├── prompt_db.cpp  # Prompt storage
 │   │   ├── task_suggester.cpp
 │   │   └── ...
 │   └── CMakeLists.txt
