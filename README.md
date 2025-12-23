@@ -195,13 +195,13 @@ ollama pull codellama       # Optimized for coding tasks
 
 ```bash
 # Option A: Download universal binary (recommended)
-curl -L https://github.com/juergengp/Casper/releases/latest/download/casper-macos-universal -o casper
+curl -L https://github.com/juergengp/casper/releases/latest/download/casper-macos-universal -o casper
 chmod +x casper
 sudo mv casper /usr/local/bin/
 
 # Option B: Build from source
-git clone https://github.com/juergengp/Casper.git
-cd Casper/cpp
+git clone https://github.com/juergengp/casper.git
+cd casper/cpp
 mkdir build && cd build
 cmake ..
 make
@@ -249,7 +249,7 @@ cd gui
 xcodegen generate
 
 # Open in Xcode and build (Cmd+R)
-open OllamaCode.xcodeproj
+open Casper.xcodeproj
 ```
 
 **Requirements:** macOS 13.0+, Xcode 15+
@@ -542,7 +542,7 @@ See [docs/MCP_SETUP.md](docs/MCP_SETUP.md) for detailed MCP configuration.
 ### Homebrew (macOS) - Recommended
 
 ```bash
-brew tap juergengp/casper https://github.com/juergengp/Casper
+brew tap juergengp/casper https://github.com/juergengp/casper
 brew install casper
 ```
 
@@ -550,13 +550,13 @@ brew install casper
 
 ```bash
 # Option A: Download universal binary directly
-curl -L https://github.com/juergengp/Casper/releases/latest/download/casper-macos-universal -o casper
+curl -L https://github.com/juergengp/casper/releases/latest/download/casper-macos-universal -o casper
 chmod +x casper
 sudo mv casper /usr/local/bin/
 
 # Option B: Clone and copy from repository
-git clone https://github.com/juergengp/Casper.git
-cd Casper
+git clone https://github.com/juergengp/casper.git
+cd casper
 sudo cp bin/casper-universal /usr/local/bin/casper
 ```
 
@@ -581,7 +581,7 @@ sudo cp bin/casper-universal /usr/local/bin/casper
 brew install cmake curl sqlite3
 
 # Build
-cd Casper/cpp
+cd casper/cpp
 mkdir build && cd build
 cmake ..
 make
@@ -594,7 +594,7 @@ sudo cp casper /usr/local/bin/
 sudo apt install cmake build-essential libcurl4-openssl-dev libsqlite3-dev
 
 # Build
-cd Casper/cpp
+cd casper/cpp
 mkdir build && cd build
 cmake ..
 make
@@ -607,7 +607,7 @@ sudo cp casper /usr/local/bin/
 sudo dnf install cmake gcc-c++ libcurl-devel sqlite-devel
 
 # Build
-cd Casper/cpp
+cd casper/cpp
 mkdir build && cd build
 cmake ..
 make
@@ -705,6 +705,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 </p>
 
 <p align="center">
-  <a href="https://github.com/juergengp/Casper/issues">Report Bug</a> •
-  <a href="https://github.com/juergengp/Casper/issues">Request Feature</a>
+  <a href="https://github.com/juergengp/casper/issues">Report Bug</a> •
+  <a href="https://github.com/juergengp/casper/issues">Request Feature</a>
 </p>
