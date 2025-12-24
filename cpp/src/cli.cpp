@@ -678,7 +678,7 @@ std::string CLI::getDefaultSystemPrompt() {
 
 CRITICAL: When the user asks you to do something that requires a tool, you MUST output the XML tool call IMMEDIATELY. Do NOT explain what you're going to do. Do NOT say "I propose to..." or "Here's what I'll do...". Just output the tool call XML directly.
 
-## Available Tools
+## Core Tools
 
 **Bash** - Execute shell commands
   - command: The shell command to run
@@ -700,10 +700,122 @@ CRITICAL: When the user asks you to do something that requires a tool, you MUST 
   - pattern: File pattern (e.g., "*.py")
   - path: Directory to search (optional)
 
-**Grep** - Search in files
+**Grep** - Search in files (uses ripgrep if available)
   - pattern: Text to find
   - path: Where to search (optional)
   - output_mode: "content" or "files_with_matches" (optional)
+
+## Package Manager Tools
+
+**Brew** - Homebrew package manager (macOS)
+  - action: install, uninstall, update, upgrade, search, info, list
+  - package: Package name
+
+**Pip** - Python package manager
+  - action: install, uninstall, list, show, search, freeze
+  - package: Package name
+
+**Npm** - Node.js package manager
+  - action: install, uninstall, list, search, update
+  - package: Package name
+  - global: true/false for global install
+
+**Apt** - Debian/Ubuntu package manager
+  - action: install, remove, update, upgrade, search
+  - package: Package name
+
+**Dnf** - Fedora package manager
+  - action: install, remove, update, search
+  - package: Package name
+
+**Yum** - RHEL/CentOS package manager
+  - action: install, remove, update, search
+  - package: Package name
+
+**Pacman** - Arch Linux package manager
+  - action: install, remove, update, search
+  - package: Package name
+
+**Zypper** - openSUSE package manager
+  - action: install, remove, update, search
+  - package: Package name
+
+## File Operation Tools
+
+**Cp** - Copy files/directories
+  - source: Source path
+  - destination: Destination path
+  - recursive: true/false for directories
+
+**Mv** - Move/rename files
+  - source: Source path
+  - destination: Destination path
+
+**Rm** - Remove files/directories
+  - path: Path to remove
+  - recursive: true/false for directories
+
+**Mkdir** - Create directories
+  - path: Directory path
+  - parents: true/false to create parent dirs
+
+**Chmod** - Change file permissions
+  - path: File path
+  - mode: Permission mode (e.g., "755", "+x")
+
+**Chown** - Change file ownership
+  - path: File path
+  - owner: Owner name
+  - group: Group name (optional)
+
+**Tar** - Archive files
+  - action: create, extract, list
+  - archive: Archive file path
+  - files: Files to archive
+  - compression: gzip, bzip2, xz, none
+
+**Zip** / **Unzip** - ZIP archives
+  - archive: Archive path
+  - files: Files to add/extract
+  - destination: Extract destination
+
+**Gzip** - Gzip compression
+  - action: compress, decompress
+  - file: File to process
+
+**Rsync** - Sync files/directories
+  - source: Source path
+  - destination: Destination path
+  - options: Additional rsync options
+
+**Scp** - Secure copy over SSH
+  - source: Source path (can be remote user@host:path)
+  - destination: Destination path
+
+**Df** - Show disk space usage
+  - path: Path to check (optional)
+  - human: true for human-readable sizes
+
+**Du** - Show directory size
+  - path: Path to check
+  - human: true for human-readable sizes
+  - summarize: true for total only
+
+## Network Tools (use /net agent for full network suite)
+
+**Ping** - Test connectivity
+  - host: Hostname or IP
+  - count: Number of pings
+
+**Curl** - HTTP requests
+  - url: URL to request
+  - method: GET, POST, PUT, DELETE
+
+## Notes
+- Package managers auto-detect the current OS and use sudo when needed on Linux
+- Missing tools can be auto-installed when prompted
+- Use /net or /network to switch to full network diagnostics agent
+- Use /db to switch to database agent for SQL queries
 )";
 }
 
