@@ -14,6 +14,7 @@
 #include "agent.h"
 #include "task_suggester.h"
 #include "license.h"
+#include "license_client.h"
 #include "model_manager.h"
 #include "prompt_db.h"
 
@@ -97,6 +98,7 @@ private:
     std::unique_ptr<MCPClient> mcp_client_;
     std::unique_ptr<TaskSuggester> task_suggester_;
     std::unique_ptr<LicenseManager> license_manager_;
+    std::unique_ptr<LicenseClient> license_client_;
     std::unique_ptr<ModelManager> model_manager_;
     std::unique_ptr<PromptDatabase> prompt_db_;
 

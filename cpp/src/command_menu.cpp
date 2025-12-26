@@ -36,9 +36,10 @@ CommandMenu::CommandMenu()
         {"safe",    "Toggle safe mode",                  "/safe [on|off]"},
         {"auto",    "Toggle auto-approve for tools",     "/auto [on|off]"},
         {"config",  "Show current configuration",        "/config"},
+        {"license", "Manage license activation",         "/license"},
         {"clear",   "Clear the screen",                  "/clear"},
-        {"exit",    "Exit CASPER",                   "/exit"},
-        {"quit",    "Exit CASPER",                   "/quit"},
+        {"exit",    "Exit CASPER",                       "/exit"},
+        {"quit",    "Exit CASPER",                       "/quit"},
     };
 }
 

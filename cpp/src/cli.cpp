@@ -37,6 +37,16 @@ CLI::CLI()
     license_manager_ = std::make_unique<LicenseManager>();
     license_manager_->initialize();
 
+    // Initialize license client for server validation
+    license_client_ = std::make_unique<LicenseClient>();
+    license_client_->setServerUrl(config_->getLicenseServerUrl());
+
+    // Load license key from config and cache
+    if (!config_->getLicenseKey().empty()) {
+        license_client_->setLicenseKey(config_->getLicenseKey());
+    }
+    license_client_->loadCache();
+
     // Initialize model manager
     model_manager_ = std::make_unique<ModelManager>(*client_, *config_, license_manager_.get());
 
@@ -1472,32 +1482,79 @@ void CLI::handlePromptCommand(const std::string& cmd) {
 
 void CLI::handleLicenseCommand(const std::string& cmd) {
     if (cmd == "license") {
-        license_manager_->showLicenseStatus();
+        // Show license status from server
+        ServerLicenseInfo info = license_client_->getLicenseInfo();
+        std::cout << "\n";
+        utils::terminal::printInfo("License Status:");
+        std::cout << "  Valid:       " << (info.valid ? std::string(utils::terminal::GREEN) + "Yes" : std::string(utils::terminal::RED) + "No") << utils::terminal::RESET << "\n";
+        if (info.valid) {
+            std::cout << "  Owner:       " << info.owner << "\n";
+            std::cout << "  Type:        " << info.license_type << "\n";
+            std::cout << "  Expires:     " << info.expires_at << "\n";
+            std::cout << "  Features:    ";
+            for (size_t i = 0; i < info.features.size(); i++) {
+                if (i > 0) std::cout << ", ";
+                std::cout << info.features[i];
+            }
+            std::cout << "\n";
+            if (license_client_->isInGracePeriod()) {
+                std::cout << "  " << utils::terminal::YELLOW << "Grace Period: " << license_client_->getGraceDaysRemaining() << " days remaining" << utils::terminal::RESET << "\n";
+            }
+        } else {
+            std::cout << "  Error:       " << info.error << "\n";
+        }
+        std::cout << "  Machine ID:  " << license_client_->getMachineId() << "\n";
+        std::cout << "  Server:      " << config_->getLicenseServerUrl() << "\n";
+        std::cout << "\n";
     } else if (utils::startsWith(cmd, "license activate ")) {
         std::string key = utils::trim(cmd.substr(17));
-        if (license_manager_->activateKey(key)) {
+        license_client_->setLicenseKey(key);
+        config_->setLicenseKey(key);
+
+        ServerLicenseInfo info = license_client_->validate();
+        if (info.valid) {
             utils::terminal::printSuccess("License activated successfully!");
-            license_manager_->showLicenseStatus();
+            std::cout << "  Owner: " << info.owner << "\n";
+            std::cout << "  Type:  " << info.license_type << "\n";
+            std::cout << "  Expires: " << info.expires_at << "\n";
         } else {
-            auto info = license_manager_->getLicenseInfo();
-            utils::terminal::printError("Activation failed: " + info.error_message);
+            utils::terminal::printError("Activation failed: " + info.error);
         }
     } else if (cmd == "license deactivate") {
         std::cout << "Deactivate license? (y/n): ";
         std::string confirm;
         std::getline(std::cin, confirm);
         if (confirm == "y" || confirm == "Y") {
-            license_manager_->deactivateKey();
-            utils::terminal::printSuccess("License deactivated.");
+            if (license_client_->deactivate()) {
+                config_->setLicenseKey("");
+                utils::terminal::printSuccess("License deactivated.");
+            } else {
+                utils::terminal::printError("Deactivation failed.");
+            }
+        }
+    } else if (cmd == "license validate") {
+        utils::terminal::printInfo("Validating license with server...");
+        ServerLicenseInfo info = license_client_->validate();
+        if (info.valid) {
+            utils::terminal::printSuccess("License is valid.");
+        } else {
+            utils::terminal::printError("Validation failed: " + info.error);
         }
     } else if (cmd == "license hwid") {
-        std::cout << "Hardware ID: " << license_manager_->getHardwareId() << "\n";
+        std::cout << "Hardware ID: " << license_client_->getMachineId() << "\n";
+    } else if (utils::startsWith(cmd, "license server ")) {
+        std::string url = utils::trim(cmd.substr(15));
+        config_->setLicenseServerUrl(url);
+        license_client_->setServerUrl(url);
+        utils::terminal::printSuccess("License server URL updated: " + url);
     } else {
         utils::terminal::printInfo("License Commands:");
         std::cout << "  /license               - Show license status\n";
         std::cout << "  /license activate <key> - Activate license key\n";
         std::cout << "  /license deactivate    - Remove license\n";
+        std::cout << "  /license validate      - Force revalidation with server\n";
         std::cout << "  /license hwid          - Show hardware ID\n";
+        std::cout << "  /license server <url>  - Set license server URL\n";
     }
 }
 

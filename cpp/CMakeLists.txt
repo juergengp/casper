@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(casper VERSION 2.3.1 LANGUAGES CXX)
+project(casper VERSION 2.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -99,6 +99,7 @@ set(SOURCES
     src/vector_db.cpp
     src/rag_engine.cpp
     src/license.cpp
+    src/license_client.cpp
     src/model_manager.cpp
     src/prompt_db.cpp
 )
@@ -123,6 +124,7 @@ set(HEADERS
     include/vector_db.h
     include/rag_engine.h
     include/license.h
+    include/license_client.h
     include/model_manager.h
     include/prompt_db.h
 )

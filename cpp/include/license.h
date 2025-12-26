@@ -88,6 +88,12 @@ public:
     void showUpgradeMessage(Feature feature) const;
     std::string getUpgradeUrl() const;
 
+    // Server validation (new)
+    void setServerUrl(const std::string& url);
+    bool validateWithServer();
+    bool isInGracePeriod() const;
+    int getGraceDaysRemaining() const;
+
 private:
     void* db_;  // sqlite3*
     std::string db_path_;

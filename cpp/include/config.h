@@ -61,6 +61,10 @@ public:
     double getRAGSimilarityThreshold() const { return rag_similarity_threshold_; }
     int getRAGMaxChunks() const { return rag_max_chunks_; }
 
+    // License settings
+    std::string getLicenseServerUrl() const { return license_server_url_; }
+    std::string getLicenseKey() const { return license_key_; }
+
     // Setters
     void setModel(const std::string& model);
     void setOllamaHost(const std::string& host);
@@ -93,6 +97,10 @@ public:
     void setRAGAutoContext(bool enabled);
     void setRAGSimilarityThreshold(double threshold);
     void setRAGMaxChunks(int chunks);
+
+    // License setters
+    void setLicenseServerUrl(const std::string& url);
+    void setLicenseKey(const std::string& key);
 
     // Persistence
     bool save();
@@ -158,6 +166,10 @@ private:
     bool rag_auto_context_;
     double rag_similarity_threshold_;
     int rag_max_chunks_;
+
+    // License settings
+    std::string license_server_url_;
+    std::string license_key_;
 
     // Allowed commands for safe mode
     std::vector<std::string> allowed_commands_;

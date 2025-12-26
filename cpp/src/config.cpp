@@ -38,6 +38,9 @@ Config::Config()
     , rag_auto_context_(true)
     , rag_similarity_threshold_(0.7)
     , rag_max_chunks_(5)
+    // License settings
+    , license_server_url_("http://10.19.0.128:5000")
+    , license_key_("")
 {
     // Default allowed commands
     allowed_commands_ = {
@@ -202,6 +205,9 @@ bool Config::load() {
         else if (key == "rag_auto_context") rag_auto_context_ = (value == "true" || value == "1");
         else if (key == "rag_similarity_threshold") rag_similarity_threshold_ = std::stod(value);
         else if (key == "rag_max_chunks") rag_max_chunks_ = std::stoi(value);
+        // License settings
+        else if (key == "license_server_url") license_server_url_ = value;
+        else if (key == "license_key") license_key_ = value;
     }
 
     sqlite3_finalize(stmt);
@@ -261,6 +267,10 @@ bool Config::save() {
     saveValue("rag_auto_context", rag_auto_context_ ? "true" : "false");
     saveValue("rag_similarity_threshold", std::to_string(rag_similarity_threshold_));
     saveValue("rag_max_chunks", std::to_string(rag_max_chunks_));
+
+    // License settings
+    saveValue("license_server_url", license_server_url_);
+    saveValue("license_key", license_key_);
 
     return true;
 }
@@ -418,6 +428,17 @@ void Config::setRAGSimilarityThreshold(double threshold) {
 
 void Config::setRAGMaxChunks(int chunks) {
     rag_max_chunks_ = chunks;
+    save();
+}
+
+// License setters
+void Config::setLicenseServerUrl(const std::string& url) {
+    license_server_url_ = url;
+    save();
+}
+
+void Config::setLicenseKey(const std::string& key) {
+    license_key_ = key;
     save();
 }
 
